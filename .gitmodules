@@ -1,0 +1,6 @@
+[submodule "app"]
+	path = app
+	url = ssh://git@codeberg.org/musty8682/ntr-app.git
+[submodule "server"]
+	path = server
+	url = ssh://git@codeberg.org/musty8682/ntr-server.git
