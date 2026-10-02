@@ -1,6 +1,6 @@
 [submodule "app"]
 	path = app
-	url = ssh://git@git.lan/dev/ntr-app.git
+	url = ssh://git@git.lan/ntr/ntr-app.git
 [submodule "server"]
 	path = server
-	url = ssh://git@git.lan/dev/ntr-server.git
+	url = ssh://git@git.lan/ntr/ntr-server.git
