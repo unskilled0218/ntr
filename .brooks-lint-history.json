@@ -20,5 +20,16 @@
       "suggestion": 0
     },
     "scope": "4-remove-context-status vs main: parent 0fa7bc8..d85def4, app 0a1e136..4351a00 (code review)"
+  },
+  {
+    "date": "2026-10-10",
+    "mode": "PR Review",
+    "score": 94,
+    "findings": {
+      "critical": 0,
+      "warning": 1,
+      "suggestion": 1
+    },
+    "scope": "tasks/5-remember-desktop-fullscreen/2-plan.md at 8df1086 (plan review)"
   }
 ]
