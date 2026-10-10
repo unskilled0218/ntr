@@ -1,0 +1,13 @@
+[
+  {
+    "date": "2026-10-10",
+    "mode": "PR Review",
+    "score": 90,
+    "findings": {
+      "critical": 0,
+      "warning": 2,
+      "suggestion": 0
+    },
+    "scope": "tasks/4-remove-context-status/2-plan.md at de7cb81 (plan review)"
+  }
+]
