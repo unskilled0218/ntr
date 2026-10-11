@@ -130,5 +130,16 @@
       "suggestion": 0
     },
     "scope": "tasks/10-picker-cancel-project-handoff/2-plan.md at 239eb74 (plan review)"
+  },
+  {
+    "date": "2026-10-11",
+    "mode": "PR Review",
+    "score": 95,
+    "findings": {
+      "critical": 0,
+      "warning": 1,
+      "suggestion": 0
+    },
+    "scope": "10-picker-cancel-project-handoff vs main: parent 94a82d4..8637cc1, app 0d57dba..a092b39 (code review)"
   }
 ]
