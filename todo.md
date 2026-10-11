@@ -3,7 +3,8 @@
 
 ## Client
 
-- remove context, status
-- remember status of full screen for desktop
-- android keeps creating `Note.md (num).txt`. Use Note.md only
-- fix android sort
+- Project recommend modal when space
+
+- script push release to forgejo page
+
+- `created` field disappear when edit. after edit show `updated`
