@@ -42,5 +42,16 @@
       "suggestion": 1
     },
     "scope": "tasks/6-remember-desktop-maximized/2-plan.md at 8fba5bc (plan review)"
+  },
+  {
+    "date": "2026-10-10",
+    "mode": "PR Review",
+    "score": 90,
+    "findings": {
+      "critical": 0,
+      "warning": 2,
+      "suggestion": 0
+    },
+    "scope": "6-remember-desktop-maximized vs 5-remember-desktop-fullscreen: parent 859767a..a515b79, app e77c512..8e927a9 (code review)"
   }
 ]
