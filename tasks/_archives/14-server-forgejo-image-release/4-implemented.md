@@ -52,3 +52,10 @@
 - Updated the release guide and existing command fixtures. The override scenario supplies `BUILDX_BUILDER=other-builder`, marks `ntr-release` as not current, and verifies Docker still uses `ntr-release` throughout.
 - `bash -n scripts/release.sh`, all 13 release test groups, and `git diff --check` passed. No live registry publication was attempted.
 - Server commit: `7d939ae` — `Always use ntr-release builder for image publishing`. The parent follow-up commit records the server revision and this existing report.
+
+## Git username follow-up
+
+- The registry login now defaults to the server checkout's effective `git config user.name`, with `FORGEJO_USERNAME` retained as an explicit override. Removed API username lookup, the API URL setting, and the publisher's curl prerequisite.
+- Updated existing documentation and fixtures. Tests verify the Git username, explicit override, rejection of empty/display names, and successful override when Git names are invalid. The fixture no longer provides curl.
+- `bash -n scripts/release.sh`, all 14 release test groups, and server `git diff --check` passed. No live registry publication was attempted.
+- Server commit: `c0c06f8` — `Use Git configuration for Forgejo release username`. The parent follow-up commit records this server revision and report.
