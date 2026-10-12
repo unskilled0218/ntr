@@ -174,5 +174,16 @@
       "suggestion": 0
     },
     "scope": "tasks/14-server-forgejo-image-release/2-plan.md at ad09322 (plan review)"
+  },
+  {
+    "date": "2026-10-12",
+    "mode": "PR Review",
+    "score": 85,
+    "findings": {
+      "critical": 1,
+      "warning": 0,
+      "suggestion": 0
+    },
+    "scope": "14-server-forgejo-image-release vs main: parent 10bd534..9f04024, server 317b447..d4d91e4 (code review)"
   }
 ]
