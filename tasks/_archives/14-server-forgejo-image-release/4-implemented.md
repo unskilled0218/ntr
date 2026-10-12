@@ -59,3 +59,11 @@
 - Updated existing documentation and fixtures. Tests verify the Git username, explicit override, rejection of empty/display names, and successful override when Git names are invalid. The fixture no longer provides curl.
 - `bash -n scripts/release.sh`, all 14 release test groups, and server `git diff --check` passed. No live registry publication was attempted.
 - Server commit: `c0c06f8` — `Use Git configuration for Forgejo release username`. The parent follow-up commit records this server revision and report.
+
+## Release logging follow-up
+
+- Added timestamped stderr progress for checkout/version checks, builder/context setup, registry login and inspection, tests, build/push, per-platform verification, and temporary credential removal. Final references and digests stay on stdout.
+- Builder bootstrap, Cargo tests, and Buildx build/push now stream merged stdout/stderr as complete lines arrive. Buildx uses `--progress plain`. Output and command announcements redact the supplied token, including a token split across child writes; login stdin is not logged. Interrupted streaming commands kill and wait for their child before temporary-directory cleanup.
+- Updated the release guide with output behavior and a Bash `pipefail`/`tee` example. The existing fixture verifies output arrives while the build is still blocked, token redaction, both child streams, release stages, and plain-progress arguments.
+- `bash -n scripts/release.sh`, all 15 release test groups, and server `git diff --check` passed. No live publication was attempted.
+- Server commit: `4c53e9d` — `Stream release progress and redact command output`. The parent follow-up commit records this server revision and report.
