@@ -7,6 +7,7 @@
   ```bash
   FORGEJO_TOKEN="$(<"$HOME/.config/forgejo/forgejo-token")" server/scripts/release.sh
   ```
+- Update `server/docker-compose.yml` to use the image published to Forgejo.
 
 ## goal
 
@@ -18,12 +19,15 @@ Use the server's version as the authoritative version for a reproducible image t
 
 Preserve the server's runtime configuration and persistent `todo.txt`, `Note.md`, and `labels.json` files. Document how to run the published image with a data mount and reachable container port. Put build, authentication, publishing, and deployment details in `server/docs/<topic>.md`, keeping `server/README.md` brief with a link.
 
+Update `server/docker-compose.yml` to pull and run the published Forgejo image using the documented image reference and version policy. Replace the current source-mounted Rust build workflow, removing its `cargo run --release` command, source mount, and build-cache volumes. Retain persistent data mounts and runtime configuration, and make the port mapping and health check work with the released image. Update `server/docs/docker-compose.md` with registry login, pull, startup, and upgrade instructions.
+
 ## acceptance criteria
 
 - `server/scripts/release.sh` builds and publishes a versioned server image using the supplied `FORGEJO_TOKEN` and documented registry authentication settings.
 - The script works from both the parent project root and the server repository root, and reports the published image reference and digest after success.
 - The published image starts the compiled server without a source mount or Rust build tools at runtime. Its `/api/health` endpoint responds successfully with the documented container configuration.
 - Existing environment variables configure the server, and mounted data survives container replacement. The documented deployment command reflects the actual port and file paths.
+- `server/docker-compose.yml` uses the Forgejo-published image and starts without compiling source. `docker compose pull` and `docker compose up -d` follow the documented registry authentication and version configuration, with a working health check and persistent data across image upgrades.
 - The image tag identifies the intended server version and build revision. Any additional tags, Git tags, or Forgejo release records require an explicit policy during planning.
 - Missing tools or credentials and build, login, or push failures produce clear errors and a nonzero exit status. Tokens are not committed or printed; credentials are passed through the container tool's supported noninteractive mechanism.
 - Verification covers the script's command flow and failure paths, image build/startup, and persistence with disposable data. Record any unavailable container-engine or live Forgejo access separately.
