@@ -45,3 +45,10 @@
 
 - Server commit: `d4d91e4` — `Build and publish multi-platform server images to Forgejo`.
 - The parent implementation commit records this server revision and the implementation report. Existing unrelated parent changes are excluded.
+
+## Fixed builder follow-up
+
+- The publisher now always uses the existing `ntr-release` builder, regardless of the caller's `BUILDX_BUILDER` or current builder selection. Docker subprocesses receive the fixed builder before preflight, and missing-builder errors include its creation command.
+- Updated the release guide and existing command fixtures. The override scenario supplies `BUILDX_BUILDER=other-builder`, marks `ntr-release` as not current, and verifies Docker still uses `ntr-release` throughout.
+- `bash -n scripts/release.sh`, all 13 release test groups, and `git diff --check` passed. No live registry publication was attempted.
+- Server commit: `7d939ae` — `Always use ntr-release builder for image publishing`. The parent follow-up commit records the server revision and this existing report.
