@@ -1,0 +1,88 @@
+# plan
+
+## scope
+
+Implement a versioned server container build and Forgejo registry publisher in the `server/` submodule, and switch `server/docker-compose.yml` to that published image. Add `server/Dockerfile`, `server/.dockerignore`, `server/scripts/release.sh`, focused script tests, and dedicated release documentation. Update the existing Compose documentation and its brief README navigation. Preserve Rust application behavior, API contracts, and file formats.
+
+The server is currently `my-ntr-server` version `0.2.1`. Compose mounts source into `rust:1-bookworm` and runs `cargo run --release`; it has no packaged server image. Its published port is actually `0.0.0.0:8080:8080`, despite comments describing configurable loopback binding, and its health URL contains an extra `}`. Address those deployment inconsistencies while replacing the source-build service.
+
+## Implementation Plan
+
+### 1. Define the release identity and configuration
+
+- Create fresh `14-server-forgejo-image-release` implementation branches in the parent and server repositories when implementation begins. Keep app revisions unchanged.
+- Default the registry to `git.lan` and image repository to `git.lan/ntr/ntr-server`, following the existing Forgejo host, owner, and server repository name. Forgejo container names use `{registry}/{owner}/{image}` and publish to Packages, not release attachments. Allow `FORGEJO_REGISTRY` and `FORGEJO_IMAGE` overrides, validate their consistency, and reject image repositories containing a supplied tag or digest.
+- Read the version through `cargo metadata --no-deps --format-version 1`, selecting the `my-ntr-server` package with Python's standard JSON parser rather than grepping Cargo.toml. Use the current crate version as the image tag, initially `0.2.1`; do not add `latest`, change the crate version, create Git tags/releases, or push source as part of this publisher.
+- Require a clean server `main` checkout for release publication and capture its full Git revision. Add OCI version, revision, and source labels; source defaults to `https://git.lan/ntr/ntr-server`. The first release is single-platform for the build host; document its architecture and defer multi-platform publishing.
+- Require `FORGEJO_TOKEN`. Accept `FORGEJO_USERNAME` as the token owner's login name, independent of the package owner `ntr`. To support the exact token-only command in the goal, resolve the login using authenticated `GET https://<registry>/api/v1/user` when the username is absent. Parse `login`, validate HTTP/JSON responses, and explain that this mode needs `read:user`; explicit username mode avoids that lookup. Allow a separate `FORGEJO_API_URL` base override for deployments with different API routing.
+- Document package-write permission and permission to publish under `ntr`, rather than reusing the app publisher's repository-write-only token instructions. Keep TLS verification enabled and use the engine's existing registry trust configuration.
+
+### 2. Build a standalone server image
+
+- Add a multi-stage Dockerfile with a compatible Rust Bookworm builder and Debian Bookworm slim runtime. Build `my-ntr-server` using `cargo build --release --locked --bin my-ntr-server` and copy only the resulting binary into the runtime stage. Install required runtime libraries, CA certificates, and curl in the image build, not in this workspace or host environment.
+- Set an exec-form entry point for the server, working directory `/data`, and image defaults `HOST=0.0.0.0`, `PORT=8080`, `TODO_FILE=/data/todo.txt`, `NOTE_FILE=/data/Note.md`, and `LABELS_FILE=/data/labels.json`. Preserve all existing environment overrides, including `TODO_ADD_CREATION_DATE`.
+- Provide a writable `/data` directory owned by a non-root runtime user with a documented numeric UID/GID. Document that bind-mounted data must be writable by that runtime identity and allow a runtime user override. Do not automatically change ownership of users' existing data.
+- Add OCI build arguments for version, revision, and source. Make curl available for the Compose health check, and verify runtime linkage against the selected base image.
+- Add `.dockerignore` exclusions for `target/`, `.git`, runtime data, root task/note/label files, credential files, and generated release output. Retain Cargo manifests, Cargo.lock, source, and any files needed for the build. Verify runtime data and secrets cannot enter image layers through the build context.
+
+### 3. Implement the release script
+
+- Add executable `server/scripts/release.sh` using Bash strict mode. Resolve the server root from `BASH_SOURCE`, so both `server/scripts/release.sh` from the parent and `scripts/release.sh` from the server work independently of the current directory.
+- Preflight Bash, Git, Cargo, Python 3, curl, Docker, and daemon access with actionable errors. Use Docker as the initial supported engine; do not introduce an untested Podman abstraction. Validate credentials, image configuration, branch/clean state, and package version before publishing.
+- Use a private temporary directory and isolated Docker configuration for registry login, with an exit trap that removes temporary credentials. Pass the token through `docker login --password-stdin`; do not put it in command arguments, trace output, or repository files. Send API authorization through curl configuration on stdin rather than a token-bearing command-line header. Run builds with the user's normal Docker configuration before isolating publication credentials so existing build/proxy settings remain available.
+- Run `cargo test --locked` before building. Build from the server Dockerfile/context with the computed image tag and OCI labels; a failed test or build must prevent any push.
+- Authenticate and inspect the existing version tag before overwriting anything. Distinguish a confirmed missing manifest from authorization, connectivity, or registry errors. If the tag exists, inspect its version/revision labels: reuse it and report its registry digest only when both match this checkout; reject a conflicting revision and explain that a new server version is required. Never treat an arbitrary lookup failure as permission to overwrite a tag.
+- Push a new version only after successful checks. Verify the published registry reference and digest using engine registry inspection; report the image reference, digest, version, and revision after successful publication. A failed or ambiguous push returns nonzero; rerunning inspects remote state before retrying and does not delete published packages.
+- Keep the script linear with small helpers for configuration, login-name resolution, and remote image inspection. Do not add Forgejo release-attachment operations or CI infrastructure.
+
+### 4. Switch Compose to the Forgejo image
+
+- Set the service image to `${NTR_IMAGE:-git.lan/ntr/ntr-server:0.2.1}`. A full-reference override supports another registry, another version, or `image@sha256:<digest>` without maintaining a second version field.
+- Remove the Rust source-build command, source working directory/mount, Cargo cache mounts, and their top-level named volumes. Keep `./data:/data`, the existing runtime environment, and `restart: unless-stopped`.
+- Set host port mapping to `${NTR_BIND:-127.0.0.1}:${NTR_PORT:-8080}:8080`, restoring the behavior the documentation promises. Keep `HOST=0.0.0.0` inside the container so published ports work; distinguish container binding from host exposure.
+- Correct the health check to `curl -fsS http://127.0.0.1:8080/api/health`, using the packaged curl executable. Reduce the source-compilation startup grace period to a measured allowance for binary startup; retain reasonable intervals, timeouts, and retries.
+- Validate bind-mount permissions without changing user files. Document a compatible `user` override when needed and confirm that atomic sibling-temp writes and rename work for all three mounted resources.
+
+### 5. Document publishing and image deployment
+
+- Add `server/docs/image-release.md` for prerequisites, configuration, image/tag/revision policy, package visibility, token permissions, token-only username lookup, explicit username alternative, and failure/rerun behavior. Include the user's command verbatim: `FORGEJO_TOKEN="$(<"$HOME/.config/forgejo/forgejo-token")" server/scripts/release.sh`.
+- Explain that registry login uses a Forgejo user with permission under the `ntr` owner; the owner is not necessarily the token username. Reference Forgejo's container documentation at `https://forgejo.org/docs/latest/user/packages/container/` and verify local-instance behavior during live testing.
+- Rewrite `server/docs/docker-compose.md` around registry login when required, `docker compose pull`, `docker compose up -d`, health checks, data permissions, `NTR_IMAGE`, `NTR_BIND`, and `NTR_PORT`. Include version/digest-pinned upgrades and rollback to a previous image without deleting the data directory. Remove claims about startup compilation and Cargo cache volumes.
+- Add only a short image-release documentation link to `server/README.md`. Keep each documentation topic in its dedicated file.
+
+### 6. Verify command flow, deployment, and persistence
+
+- Add a standard-library Python unittest harness in `server/tests/release_script_test.py`, invoking the real Bash script with fake commands on an isolated PATH and disposable Git/server fixtures. Fake registry/engine results must model remote existence and digest verification separately from local image presence. Observe command arguments, login stdin, outputs, exit status, and cleanup rather than reproducing script internals.
+- Cover parent/server/unrelated working directories, version selection, default/override image configuration, token-only username resolution, explicit username bypass, and successful digest reporting. Cover missing credentials/tools, dirty or non-main checkout, denied/malformed username lookup, test/build/login failures, confirmed missing image, remote lookup failure, conflicting existing revision, same-revision rerun, and push/verification failures. Check that credentials do not appear in logged arguments/output and temporary auth files are removed on failure as well as success.
+- Run `bash -n scripts/release.sh`, `python3 -m unittest discover -s tests -p 'release_script_test.py'`, and `cargo test --locked` from server. Run ShellCheck if available; record its absence rather than installing packages automatically.
+- With Docker available, build the image, inspect version/revision labels and architecture, and run it with disposable mounted data. Assert `/api/health`, create/update tasks and note/labels through HTTP, replace the container with the same data mount, and verify all resources survived. Verify file watching still detects external task/note edits. Confirm no source mount, Cargo, or Rust compiler is needed at runtime.
+- Run `docker compose config` for default and overridden image/bind/port settings. Validate the actual service startup and healthy status with a disposable Compose project/data directory, never the user's `server/data` files.
+- With registry access, execute the supplied publishing command after implementation is committed on server `main`, then pull the reported digest and run the smoke/persistence checks. Verify same-revision rerun behavior and report the published reference/digest. Separate local image/fixture checks from live Forgejo proof.
+- Docker, Podman, and ShellCheck are currently absent from PATH. Image build/run/push checks require a Docker CLI, Compose plugin, and reachable engine supplied by the user; fixture and Rust checks remain runnable. Do not install system prerequisites or change daemon/trust configuration automatically.
+
+### 7. Record implementation and commit
+
+- Write `4-implemented.md` in this task directory with changed files, chosen registry/login policy, image identity, commands/results, deployment evidence, and unavailable runtime checks. Record whether a registry publication actually occurred.
+- Check `git diff --check` in the server and parent, documentation links, script executable mode, and consistency between Cargo version and the default Compose image tag. Commit server packaging/script/tests/docs changes, then the parent server gitlink and implementation report. Keep existing unrelated parent edits out of those commits.
+
+## Acceptance Criteria
+
+- The requested token-only command works through documented login-name resolution and publishes `git.lan/ntr/ntr-server:0.2.1` by default, or the configured image, with the intended revision and reported registry digest.
+- The runtime image contains the compiled server and starts without compiling or mounting source. Runtime environment overrides and mounted task/note/label data retain existing behavior.
+- Compose pulls the Forgejo image, has configurable loopback-default host exposure, a valid working health check, and persistent data across image replacement.
+- Release failures stop publication and return nonzero. Existing version tags from another revision are not silently overwritten; same-revision reruns report the existing published digest.
+- Focused script tests and Rust checks pass. Actual image build/runtime/persistence and live publication checks pass when the required engine/registry are available, with any missing verification explicitly recorded.
+- Dedicated documentation covers publishing, login permissions, Compose startup, image/version overrides, data permissions, and upgrades. README remains concise.
+
+## Risks And Decisions
+
+- The default image repository is confirmed from the existing Git origin and Forgejo's naming rules. The account username cannot be inferred from Git author metadata; resolve it from the supplied token or explicit `FORGEJO_USERNAME`.
+- Forgejo package publishing requires package permissions. A token previously used for app repository releases may lack `write:package` or the optional username lookup's `read:user`; documentation and errors must distinguish these cases.
+- Registry inspection can fail for reasons other than a missing tag. A rerun must not convert access or network errors into an overwrite. Version labels and Git revision establish source identity; `--locked` does not promise byte-identical images across changing base-image digests.
+- Docker registries do not provide a universal compare-and-swap for tags. The script's conflict check protects normal serial releases; concurrent publishers for the same version remain unsupported and must be documented.
+- Preserve server version `0.2.1` for its first image. Later conflicting releases require a deliberate Cargo version update and matching Compose default; no automatic version bump or mutable `latest` alias is introduced.
+- A host-platform image does not support every deployment architecture. Report architecture and defer a multi-platform manifest until there is a concrete requirement.
+- Image directory ownership does not override host bind-mount permissions. Verify atomic writes with the documented runtime user before deployment, and never change existing data ownership automatically.
+- The current Compose file exposes all interfaces while its documentation claims loopback defaults. The planned loopback-default mapping follows the documented contract; users needing remote access must set `NTR_BIND=0.0.0.0` explicitly.
+- Live publication follows committed server-main code because the script rejects dirty and feature-branch releases. Fixture tests and locally labeled image smoke tests provide pre-merge verification; missing Docker/registry access is a recorded limit, not evidence of success.
+- This planning stage changes only `2-plan.md` and commits that document. Implementation and publication occur later.
