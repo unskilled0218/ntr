@@ -90,3 +90,9 @@
 - Updated existing docs and fixtures to run without a Skopeo executable. Added protocol scenarios for Basic/Bearer auth, explicit default ports, denied tokens/blobs, external redirects, untrusted token endpoints, redirect loops, and secret-bearing curl failures. Existing artifact integrity and partial-upload/reuse scenarios remain covered.
 - `bash -n scripts/release.sh`, all 28 release test groups, and server/parent `git diff --check` passed. The final suite took approximately 69 seconds and runs with no Skopeo executable on its fixture PATH. Live authenticated registry downloads and real Forgejo uploads were not attempted. No new package was installed.
 - Server commit: `a692717` — `Export release archives without Skopeo`. The parent follow-up commit records this server revision and report.
+
+## Server version follow-up
+
+- Bumped the server package and its Cargo.lock entry from `0.2.2` to `0.2.3`, with no dependency changes. Updated the Compose image default and current release/deployment examples to `0.2.3` and `v0.2.3`.
+- `cargo metadata --locked --no-deps --format-version 1` resolves `my-ntr-server` version `0.2.3`. `docker compose config` resolves `git.lan/ntr/ntr-server:0.2.3`. `git diff --check` passed; no old version references remain in current manifests, lockfile, Compose, or server documentation.
+- Server commit: `629975e` — `Bump server version to 0.2.3`. The parent follow-up commit records this revision and report. No container image or release attachment was published during this version update.
