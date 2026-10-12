@@ -96,3 +96,15 @@
 - Bumped the server package and its Cargo.lock entry from `0.2.2` to `0.2.3`, with no dependency changes. Updated the Compose image default and current release/deployment examples to `0.2.3` and `v0.2.3`.
 - `cargo metadata --locked --no-deps --format-version 1` resolves `my-ntr-server` version `0.2.3`. `docker compose config` resolves `git.lan/ntr/ntr-server:0.2.3`. `git diff --check` passed; no old version references remain in current manifests, lockfile, Compose, or server documentation.
 - Server commit: `629975e` — `Bump server version to 0.2.3`. The parent follow-up commit records this revision and report. No container image or release attachment was published during this version update.
+
+## Fixed Compose values follow-up
+
+- Replaced Compose interpolation with literal image `git.lan/ntr/ntr-server:0.2.3`, user `1000:1000`, creation-date setting `true`, and port mapping `127.0.0.1:8080:8080`. Container runtime settings remain explicit fixed values. Updated the existing deployment documentation to describe fixed values and file-based version selection.
+- Real `docker compose config --format json` results were identical with and without conflicting `NTR_IMAGE`, `NTR_UID`, `NTR_GID`, `NTR_BIND`, `NTR_PORT`, and `TODO_ADD_CREATION_DATE` environment variables. Assertions confirmed the requested literal defaults. Server `git diff --check` passed.
+- Follow-up instruction: removed the entire Compose `environment` section. The Dockerfile already supplies the same host, port, and resource paths; creation-date behavior defaults to `true` in the server. Updated deployment docs to describe inherited defaults.
+
+## Server 0.2.4 follow-up
+
+- Bumped Cargo.toml and the locked server package entry to `0.2.4`, with no dependency changes. Updated the fixed Compose image and current release/deployment documentation to `0.2.4` and `v0.2.4`.
+- Locked Cargo metadata confirms version `0.2.4`. Real Compose JSON validation confirms fixed image `git.lan/ntr/ntr-server:0.2.4`, user `1000:1000`, loopback port `8080`, and no `environment` section. Conflicting former override variables produce identical configuration. `git diff --check` passed.
+- Server commit: `48a2ce0` — `Bump server to 0.2.4 and fix Compose configuration`. The parent follow-up commit records this revision and report. No container image or release attachment was published during this update.
