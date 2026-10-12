@@ -163,5 +163,16 @@
       "suggestion": 0
     },
     "scope": "12-task-date-metadata-layout vs main: parent dd98deb..1b7cbab, app a092b39..127e3ec, server a0ac7cd..a3f468b (code review)"
+  },
+  {
+    "date": "2026-10-12",
+    "mode": "PR Review",
+    "score": 90,
+    "findings": {
+      "critical": 0,
+      "warning": 2,
+      "suggestion": 0
+    },
+    "scope": "tasks/14-server-forgejo-image-release/2-plan.md at ad09322 (plan review)"
   }
 ]
