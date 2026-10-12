@@ -1,0 +1,79 @@
+# plan
+
+## scope
+
+Implement the latest task's two-line layout: description above space-separated projects, due, creation, and update dates. Keep `created` visible alongside `updated` after edits. Preserve original creation dates, completion information, pending edit behavior, and persisted task metadata in local/server modes.
+
+Use the existing todo.txt `key:value` support to persist `updated:YYYY-MM-DD`, avoiding a new DTO field or storage format. Production changes belong in app date/description helpers, EditTaskModal, and TaskItem. Add focused app-native and server persistence/API regressions for the existing storage contract; change backend production code only if diagnosis demonstrates a remaining creation-date loss there.
+
+## Implementation Plan
+
+### 1. Characterize creation-date retention and define the edit-date contract
+
+- Trace an active task and a completed task through EditTaskModal initialization, `composeEditedTask`, submitted raw line, update response, TodoPane refresh, and storage reload. Use explicit creation dates older than the save date. Identify the exact boundary responsible for any reproduced date loss before changing backend logic.
+- Existing valid positional-date serialization intends to preserve creation. Keep active `(A) <created> ...` and completed `x <done> <created> ...` grammar. Do not relabel a creation date as an update date, replace it with today's date, or invent a completion date.
+- The existing helper test for a constructed completed task with creation but no completion explicitly drops creation. This combination cannot represent both facts in standard positional todo.txt dates. Replace silent dropping with an explicit pre-save validation error for that inconsistent shape, preserving the original task. Completed legacy records with neither date remain editable without invented historical dates.
+- Reserve `updated` as the latest successful app Edit/Save attempt's local calendar date, serialized once as `updated:YYYY-MM-DD`. Compute it when Save is pressed, including a retry; it becomes committed only when the existing store write succeeds. A save with unchanged fields still counts as an explicit saved edit. Same-day edits retain the same date.
+- Opening/cancelling Edit, rendering, completion/reopening, bulk label removal, raw backup/reconciliation, and file reload must not generate a new update date. Existing `updated` tags must survive those paths. External clients remain responsible for metadata in the whole replacement line they submit.
+- Preserve the current nullable date/tag DTOs. Do not use localStorage or transient task IDs to track edit dates; IDs are reassigned after reload/raw replacement, while the canonical raw task line travels through both transports and backup.
+
+### 2. Serialize saved edits without dropping existing metadata
+
+- Add a small pure `app/src/lib/taskDates.ts` module for local `YYYY-MM-DD` formatting and strict calendar-date validation. Use local year/month/day components for the save stamp, not `toISOString().slice(0, 10)`, which can select a different UTC day. Validation must reject impossible dates as well as wrong syntax; share it with metadata rendering.
+- Extend `EditableTask` in `labels.ts` with the original projects and tags needed for preservation. Add an explicit edit-date argument to `composeEditedTask`, keeping the serializer pure and deterministic. Update its sole production caller and existing test fixtures.
+- Retain creation/completion prefixes and current leading/completed priority semantics. Emit one controlled due token and exactly one new updated token. Remove old `updated:` tokens from reconstructed content before appending the new stamp, including repeated old stamps or an invalid value under that newly reserved key. Match whole token/key boundaries; embedded URLs and similarly named keys are not update metadata.
+- Preserve original non-managed tags that EditTaskModal currently strips from its text input instead of silently losing them during reconstruction. Treat due, updated, and priority bookkeeping as managed fields; append preserved non-managed tags only when the exact token is not already present in the submitted description. Keep unrelated text intact.
+- When the project selection is unchanged from the original first project, retain all original projects rather than dropping unseen additional associations during a date-only edit. An explicit project-selection change continues the existing single-select replacement behavior; clearing it clears that selection's project set. Deduplicate exact emitted project/context tokens without substring matching.
+- Continue preserving all original contexts. Keep `composeText` for AddForm unchanged: creating a task does not stamp it as edited. Preserve the empty/context-only edit validation so an updated tag alone cannot turn an empty task into a valid edit.
+- In EditTaskModal's submit handler, compute the save date and compose/validate the line inside its existing error-catching path. Validation and write failures leave the original task object, displayed dates, and persisted metadata untouched; keep the form open with its existing error presentation. Do not optimistically mutate the Task prop or publish the new updated date before persistence succeeds.
+- Leave the successful TodoPane flow intact: await `updateTask`, close Edit, and reload actual stored tasks. A retry recalculates its stamp rather than reusing a date captured when the dialog opened.
+
+### 3. Render project/date metadata in the requested order
+
+- Update TaskItem metadata to emit all projects first, then valid `due:<date>`, available `created:<creation_date>`, valid `updated:<date>`, and applicable `done:<completion_date>` last. Join with single spaces, using the existing smaller `.meta` block. Created and updated are independent entries, never alternatives.
+- Read creation/completion dates from their existing task fields and due/update dates from tags. Do not add a competing `created:` storage tag or derive creation from the update date. Preserve project order and existing completion information.
+- Display only valid calendar due/update dates as date metadata. Keep malformed date-like tokens visible as ordinary description text rather than silently hiding them or producing empty labels. Legacy tasks lacking dates simply omit those entries.
+- Add a focused list-display helper in `labels.ts` that reuses exact token stripping for projects/contexts and hides valid whole `due:`/`updated:` date tokens relocated to metadata, including repeated valid housekeeping tokens. Keep other keys such as `custom:value` and current priority-tag display behavior intact. Do not pass every parsed tag to `bareDescription` for list rendering, since that would hide unrelated content.
+- Keep priority markup, checkbox/action callbacks, completed styling, and `Task without description` fallback. Date-only/label-only rows can use the fallback while retaining their metadata. No layout redesign is required; inspect wrapping at mobile/desktop widths and adjust CSS only if the new metadata text exposes a concrete layout issue.
+
+### 4. Add behavioral and persistence regressions
+
+- Date helpers: cover local-calendar formatting, midnight/day boundaries, valid leap dates, impossible dates, malformed strings, and empty values. Use supplied dates or controlled clocks; do not sleep or rely on the machine's current date.
+- Serializer tests in `labels.test.ts`: first/repeated edits on distinct fixed days; unchanged original creation; completed dates/priority; missing legacy dates; invalid completed/creation-only shape; replacement of old/duplicate updated tokens; preservation of unrelated tags, unchanged multiple projects, and contexts; explicit project changes; and no mutation of the source object.
+- EditTaskModal tests: use a controlled save clock for successful payload expectations. Cover opening/cancelling with no stamp, rejection with original data preserved, validation errors caught before `onSave`, and a retry on a later day. Verify opening on one day and saving on another uses the Save day. Preserve existing modal, label, and context-only tests.
+- TaskItem tests: require the exact example `+cart due:2026-10-12 created:2026-10-10 updated:2026-10-11` beneath `Do something`. Cover multiple projects, created-only legacy tasks, simultaneous created/updated, missing dates, completion metadata, malformed dates, duplicate housekeeping tokens, preserved unrelated text/tags, exact token boundaries, fallback, and original action payload identity.
+- Update TodoPane integration display assertions to colon-style metadata. Add a stateful edit/save/reload scenario showing created unchanged and updated present after the first save and refreshed after a later save. Rejecting a write must retain the prior row's dates. Do not weaken sorting/filtering or completion checks merely to accommodate new text.
+- Extend `api.test.ts` with local and server update fixtures containing the creation prefix plus due/updated tags. Assert the canonical line sent to the correct transport, returned metadata, and server `/api/raw` backup retaining the same dates. The transport must not introduce a second edit stamp during backup or switch-to-local behavior.
+- Add an app-native store regression using real disposable FsBackend files: save two successive edit lines with a fixed original creation date and distinct update tags, reload the store, and verify TaskDto creation, tags, and raw text. Complete/reopen and raw replace/reload must preserve those values. Add a failing-write fixture through the existing backend seam to verify unchanged cached/persisted dates.
+- Add server persistence and router regressions, using its existing `tower` dev dependency and disposable store/note/label paths. PUT a line with fixed creation/due/update values, inspect JSON and `/api/raw`, rebuild state from disk, and repeat an edit. Include completed records, legacy no-date records, invalid/failed writes, and preservation of metadata through completion/reopening. Keep these test-only server additions on a fresh task branch; no server production protocol or release change is required for generic tags.
+- Use isolated temporary directories and mock restoration/clock cleanup. Assert actual parsed/persisted outcomes, not only that an update or formatter function was called.
+
+### 5. Verify, document, and release
+
+- From `app`, run `npm test -- src/labels.test.ts src/components/TaskItem.test.tsx src/components/EditTaskModal.test.tsx src/components/TodoPane.test.tsx src/api.test.ts`, including new date-helper test files in the focused command.
+- Run `npm test` and `npm run build` from `app`. From `app/src-tauri`, run `cargo test --locked` and `cargo clippy --all-targets`. From `server`, run `cargo test --locked` and `cargo clippy --all-targets`. Run targeted Rust formatting checks for changed test modules and `git diff --check` in all changed repositories.
+- If browser/device access is available, inspect active/completed rows at mobile/desktop widths and perform local/server create → edit → reload/restart → edit flows using disposable tasks. Verify the example ordering, retained created date, refreshed updated date, and no duplicated due/update text. Record unavailable visual/device verification separately from storage/DOM results; do not install system prerequisites automatically.
+- Write `4-implemented.md` in this task directory with reproduced date-loss boundaries or characterization results, changed files, commands/results, date policy, persistence evidence, and runtime limits.
+- Follow the app patch-release convention: bump `0.15.13` to `0.15.14` consistently in npm metadata/lockfile, Cargo metadata/lockfile, and Tauri configuration, without dependency upgrades. Recheck the current version if another release intervenes.
+- Commit app implementation and server test additions in their task branches, then commit the parent submodule pointers and implementation report through the existing workflow.
+
+## Acceptance Criteria
+
+- The supplied example renders on two lines with projects, due, created, and updated in order and colon-style formatting. Completion information remains available for completed tasks.
+- Valid original creation dates remain stored and visible after first/repeated edits, alongside the latest successful Save attempt's local-calendar update date. No historical dates are invented for legacy tasks.
+- Update dates are persisted as one canonical `updated:` tag and survive local/server reload, restart, raw backup/replacement, and later edits. Completion/reopening and non-editor operations preserve existing stamps.
+- Opening/cancelling Edit and known rejected writes do not change dates. Invalid unrepresentable date combinations fail before save rather than silently discarding creation or inventing completion.
+- Dedicated valid due/update tokens appear in metadata without duplicate main-line text. Malformed date-like strings and unrelated tags/text remain visible; priorities, project/context associations, task actions, and fallback retain their stated contracts.
+- Rendered tests, controlled-clock edit tests, transport checks, and real local/server persistence/API regressions pass. Required frontend/native checks, formatting/diff checks, and any unavailable runtime acceptance are recorded.
+- App release metadata agrees on the new patch version, and app/server-test/parent commits follow repository conventions.
+
+## Risks And Decisions
+
+- The exact creation-date-loss path has not been reproduced during planning. Existing code preserves valid standard prefixes but has a known silent-drop branch for an inconsistent completed-date shape; diagnosis and regressions must distinguish these cases.
+- Client-side Edit/Save stamping deliberately covers app edits without changing generic server replacement semantics or restamping backups. The save-attempt day is used if a request spans midnight; retries recompute it. The client clock is the authority for this date-only UI field.
+- A response/connection failure after a server commit can leave the outcome uncertain. Known validation/storage rejections must preserve data; ambiguous transport failures require reloading the actual stored task before asserting that no update committed. Do not introduce a distributed transaction protocol for this task.
+- `updated` becomes reserved metadata. Valid existing tags display immediately; a successful editor save replaces old values with one canonical stamp. Invalid values remain ordinary text until that explicit save normalizes the reserved field.
+- Whole-line edits can drop hidden tags or extra projects if they reconstruct only visible controls. Preservation is part of this task's date roundtrip guarantee, with existing explicit single-select project-change behavior retained.
+- Completed tasks require completion before positional creation. Reject inconsistent creation-only completed DTOs instead of inventing dates or changing todo.txt grammar; real legacy records without dates remain supported.
+- Existing ported app/server parsers and stores already carry generic tags. Test their distinct storage/API boundaries without adding a new persistence format, sidecar file, DTO version, or duplicate backend date-stamping policy.
+- This planning stage changes documentation only. Native visual checks remain conditional on available runtime access.
