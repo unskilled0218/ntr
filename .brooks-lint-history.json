@@ -240,5 +240,16 @@
       "suggestion": 0
     },
     "scope": "tasks/17-note-baseline-draft-protection/2-plan.md at 4020e38 (plan review only; not implementation health)"
+  },
+  {
+    "date": "2026-10-24",
+    "mode": "Health Dashboard",
+    "score": 99,
+    "findings": {
+      "critical": 0,
+      "warning": 1,
+      "suggestion": 0
+    },
+    "scope": "17-note-baseline-draft-protection vs 16-note-save-ownership: parent 2751fd6..30b6968, app 694c138..0f634d3 (code review; warning inherited)"
   }
 ]
