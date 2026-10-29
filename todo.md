@@ -1,6 +1,4 @@
 
-- get dev-docker/Dockerfile/tauri.Dockerfile
-
 - remove priority
 - edit projects
 
