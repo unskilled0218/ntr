@@ -5,85 +5,65 @@
 - [Recommendation](#recommendation)
 
 **Mode:** Health Dashboard
-**Scope:** `tasks/21-remove-priority/2-plan.md`, checked against affected client and server paths; this is a plan review, not a whole-project audit.
-**Composite Score:** 94/100
+**Scope:** Revised `tasks/21-remove-priority/2-plan.md` and affected task parsing, editing, and persistence paths; not a whole-project audit.
+**Composite Score:** 97/100
 
 | Dimension | Score | Top finding |
 | --- | --- | --- |
-| Code Quality | 90/100 | Legacy token source and mixed-version lifecycle behavior are unspecified. |
-| Architecture | 95/100 | The plan leaves the edit transport boundary unresolved. |
-| Tech Debt | 95/100 | Removing the query field alone can silently ignore the old filter. |
-| Test Quality | 95/100 | Preservation tests do not specify end-to-end persisted outcomes. |
+| Code Quality | 95/100 | New descriptions can collide with legacy token syntax. |
+| Architecture | 100/100 | No additional finding in the inspected plan boundary. |
+| Tech Debt | 95/100 | Repeated `pri:` preservation lacks an editing rule. |
+| Test Quality | 95/100 | The regression matrix omits new-input syntax collisions. |
 
-Scores use balanced deductions for the five plan findings below, assigned to one dimension each. The weighted result is 93.75, rounded to 94. They measure review coverage of this plan, not the health of the entire codebase. No `.brooks-lint.yaml` was found. History was not modified because this task requests only a plan review.
+Balanced scoring assigns each finding to one dimension: 95 × 0.25 + 100 × 0.30 + 95 × 0.25 + 95 × 0.20 = 96.5, rounded half-up to 97. These scores describe this plan review only. No project configuration was found. History is not modified for this document-only review.
 
 ## Module dependency graph
 
 ```mermaid
 graph TD
-  UI[Client task UI] --> Serializer[Edit serializer]
+  UI[Task UI] --> Serializer[Task serializer]
   UI --> Transport[Client transport]
-  Transport --> Local[Local Tauri commands and store]
-  Transport --> HTTP[Server HTTP API and store]
-  Local --> LocalModel[Local task model and files]
-  HTTP --> ServerModel[Server task model and files]
   Serializer --> Transport
+  Transport --> Local[Local commands and store]
+  Transport --> Server[Server API and store]
+  Local --> LocalModel[Local task parser and file]
+  Server --> ServerModel[Server task parser and file]
 ```
 
 ## Top findings
 
-### Warning: Legacy tokens have no defined edit path
+### Warning: Newly entered text can become hidden legacy metadata
 
-**Symptom:** `2-plan.md:21-29` requires preserving leading tokens during edits while removing the priority DTO field, but does not specify how the serializer obtains the token. Both DTOs currently put the parsed token in `priority`, omit it from `description`, and expose it in `raw`; `app/src/labels.ts:58-98` rebuilds the whole line without reading `raw`.
+**Symptom:** `2-plan.md:20-24,28-29,52` recognizes every leading `(A)`–`(Z)` token as hidden legacy data while retaining free-text task entry. Currently `AddForm.tsx:37-42` passes the user's description to `composeText`, and both Rust parsers interpret a leading `(A)` as priority before adding a creation date.
+
+**Source:** Domain-Driven Design — Ubiquitous Language.
+
+**Consequence:** A user entering `(A) call` after priority removal can create a new task whose text is treated as hidden legacy data, conflicting with the no-new-priority acceptance criterion and potentially obscuring part of the intended description.
+
+**Remedy:** Specify how new free-text input that resembles a legacy token is handled without silently hiding or discarding user text. Include add and edit cases for both backends and document any ambiguity inherent in the existing file format. Distinguish user-provided text from application-generated priority metadata.
+
+### Warning: Repeated `pri:` tags lack a defined edit merge rule
+
+**Symptom:** `2-plan.md:24,29,45` requires preserving repeated `pri:` tokens but does not say how they interact with changes to the description. `bareDescription` currently strips effective tags using a map, while `composeEditedTask` restores tags by key; neither represents all original occurrences faithfully.
 
 **Source:** A Philosophy of Software Design — Information Leakage.
 
-**Consequence:** An otherwise valid edit can discard a legacy token, especially with an older server that still strips it from the description.
+**Consequence:** A save could duplicate old tokens, discard earlier values, or restore a value the user intentionally changed. Different implementations could satisfy the broad preservation wording while producing different results.
 
-**Remedy:** Define one explicit compatibility representation and extraction rule across old and new DTOs, with placement before dates for active and completed lines. Specify how hidden tokens survive edits without appearing as a priority control, and test actual edit/save/reload behavior.
+**Remedy:** Define whether `pri:` tokens are editable text or hidden unmanaged metadata. Specify how original occurrences, ordering, and explicitly submitted changes are merged, including duplicate identical tokens and distinct values. Test unchanged and changed descriptions against both backends and older server responses.
 
-### Warning: Mixed-version lifecycle behavior conflicts with preservation
+### Warning: Tests do not cover newly created ambiguous lines
 
-**Symptom:** `2-plan.md:20-22,29,35` requires completion and reopening not to move or create legacy tokens and also asks for compatibility with older servers. The current `server/src/task.rs:98-155` converts leading priority to `pri:X` on completion and restores it on reopening.
-
-**Source:** Software Engineering at Google — Backward compatibility.
-
-**Consequence:** A new client connected to an older server cannot meet the stated lifecycle guarantee merely by ignoring extra response fields.
-
-**Remedy:** Define supported version combinations and choose whether to detect and block unsafe actions, require a coordinated server upgrade, or explicitly narrow the guarantee. Add mixed-version completion and reopening tests for the chosen policy.
-
-### Warning: The compatibility boundary is underspecified
-
-**Symptom:** `2-plan.md:21,27,33-35` distributes legacy parsing between two Rust models and a TypeScript serializer without defining which representation is authoritative when `raw`, parsed dates, and description disagree.
-
-**Source:** Clean Architecture — Interface Segregation.
-
-**Consequence:** Local and server behavior can diverge, and future edits can confuse legacy syntax with task description or dates.
-
-**Remedy:** Define the representation and ownership at the task DTO/serializer boundary, including exact token position and behavior for missing, malformed, or inconsistent input. Use the same explicit examples against both backends.
-
-### Warning: Removed filters can return misleading results
-
-**Symptom:** `2-plan.md:34` says to remove the query definition and reject a legacy filter only if the interface permits. `server/src/api.rs:146-153,198-208` currently deserializes the priority query into `ListQuery`; removing that field without an explicit check risks accepting it as an unknown parameter.
-
-**Source:** Code Complete — Defensive Programming.
-
-**Consequence:** An old caller requesting a filtered list may receive every task and mistake it for the filtered result.
-
-**Remedy:** Specify an explicit HTTP 400 for any supplied `priority` query, including empty, invalid, and repeated values, without rejecting unrelated supported filters. Decide and test the corresponding old Tauri invocation behavior separately.
-
-### Warning: Preservation tests lack a concrete persistence matrix
-
-**Symptom:** `2-plan.md:40` lists parse/serialize and lifecycle cases but does not require cross-layer save/reload assertions for each backend or an unrelated task mutation, even though `app/src-tauri/src/store.rs:214-246` renders the entire store on every save.
+**Symptom:** `2-plan.md:43-46` covers existing legacy lines and malformed boundaries but does not explicitly include adding or editing descriptions beginning with valid priority-shaped tokens, or verify their visible text after save and reload.
 
 **Source:** How Google Tests Software — Change Coverage.
 
-**Consequence:** Isolated parser and mocked transport tests could pass while a real edit or unrelated write corrupts legacy data on disk.
+**Consequence:** Existing-data preservation tests can pass while the new task flow silently hides user-entered text.
 
-**Remedy:** Specify shared fixtures covering active and completed legacy tokens, dates and `pri:` text. Assert persisted and reloaded lines after edit, complete, reopen, and mutation of a different task through real local and HTTP paths, including new-client/old-server cases under the chosen compatibility policy.
+**Remedy:** Add behavior-level cases for `(A) call`, `(A)` alone, malformed lookalikes, and priority-shaped text inside a description. Verify displayed and editable text and persisted data after add, edit, completion, and reload for the selected policy.
 
-The inspected test inventory includes 33 frontend test files and two server integration test files; Rust inline unit tests also exist. Test counts are file counts, not executed test results. No tests were run for this document-only review.
+The previous review's main findings are substantially addressed: the revised plan identifies `raw` as the token source, defines a mixed-version limitation, rejects legacy filters, and adds persistence tests. The remaining findings above concern new-input ambiguity and the exact repeated-tag edit contract. No tests were run for this document-only review.
 
 ## Recommendation
 
-Revise the plan before implementation: define the legacy-data transport contract and mixed-version policy first, then specify concrete filter errors and persisted-data regression cases. The proposed non-destructive approach is appropriate, but its current boundary details do not yet guarantee preservation.
+Clarify the new-input and repeated-tag policies before implementation. The existing file format makes valid priority-shaped leading text ambiguous, so choose and test an explicit user-visible behavior rather than relying on parser defaults.
