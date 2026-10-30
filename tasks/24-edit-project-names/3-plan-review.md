@@ -6,8 +6,7 @@
   - [Module Dependency Graph](#module-dependency-graph)
   - [Test suite map and coverage assessment](#test-suite-map-and-coverage-assessment)
   - [Top Findings](#top-findings)
-    - [F1: Warning — R6 Domain Model Distortion: Collision checks do not distinguish own progress](#f1-warning--r6-domain-model-distortion-collision-checks-do-not-distinguish-own-progress)
-    - [F2: Warning — R2 Change Propagation: Partial rename has no explicit remote-review handoff](#f2-warning--r2-change-propagation-partial-rename-has-no-explicit-remote-review-handoff)
+  - [Previous finding resolution](#previous-finding-resolution)
   - [Verification and limits](#verification-and-limits)
   - [Recommendation](#recommendation)
 
@@ -15,22 +14,22 @@
 
 **Mode:** Health Dashboard
 
-**Scope:** Plan-only review of `tasks/24-edit-project-names/2-plan.md` at `e5789f3`, checked against its goal and the current app's project, draft, mutation, and remote-approval boundaries. This assesses proposed design and verification readiness, not implemented feature health. No `.brooks-lint.yaml` was found; balanced defaults apply.
+**Scope:** Revised plan-only review of `tasks/24-edit-project-names/2-plan.md` at `dafa746`, including the full plan and its changes since the initial review at `e5789f3`. Checked against the goal and current app project, draft, mutation, and remote-approval boundaries. This assesses proposed design and verification readiness, not implemented feature health. No `.brooks-lint.yaml` was found; balanced defaults apply.
 
-**Composite Score:** 98/100
+**Composite Score:** 100/100
 
-**Trend:** Stable at 98 against the preceding Health Dashboard record. That record reviewed task-23 implementation, so it is not a like-for-like plan comparison.
+**Trend:** 98 → 100 (+2) against the preceding review of this task's plan.
 
-Revise two lifecycle details before implementation: distinguish a rename's own target references from collisions, and define how a partially completed operation yields modal ownership to remote review. The rest of the plan addresses the goal, existing bulk-rescan defect, partial resource failures, draft references, transport scoping, and last-write-wins limits without claiming transactional guarantees.
+Ready for implementation at the plan level. Both previous warnings are addressed with explicit invariants, lifecycle contracts, and regression scenarios. No new actionable finding was established; implementation and device behavior remain unverified.
 
 ## Dimension scores
 
-- Code Quality/design readiness: **95/100**. F2 identifies a missing handoff between the proposed operation lifecycle and existing modal/approval orchestration.
+- Code Quality/design readiness: **100/100**. Modal visibility, retained progress, and mutation authority are separated; review handoff and explicit reconfirmation are defined.
 - Architecture: **100/100**. The proposed pure transformations, scoped operation helper, pane projections, and existing transport adapter have appropriate boundaries. No planned import cycle or domain-to-native dependency is established.
-- Tech Debt/domain readiness: **95/100**. F1 identifies an incomplete operation-owned namespace invariant that affects both normal completion and retry.
-- Test Quality/verification readiness: **100/100**. The plan requests pure, component, real-pane/coordinator, partial-failure, transport, and manual checks with observable assertions. No separate T1/T2 finding is established from the proposed tests; add the concrete F1/F2 scenarios below to make their expected outcomes explicit.
+- Tech Debt/domain readiness: **100/100**. Initial namespace checks and operation-aware continuation checks now distinguish own verified progress from unexplained target references.
+- Test Quality/verification readiness: **100/100**. The plan requests observable pure, component, real-pane/coordinator, partial-failure, transport, and manual checks, including explicit success/failure expectations for both previous findings. No separate T1/T2 finding was established.
 
-Each warning deducts five points in its assigned dimension only. Composite: `round-half-up(95 × 0.25 + 100 × 0.30 + 95 × 0.25 + 100 × 0.20) = 98`. Code Quality evaluates the proposed plan change, not a production-code diff. A high capped score does not waive the two warnings.
+With no active findings, every dimension scores 100 under balanced defaults. Composite: `100 × 0.25 + 100 × 0.30 + 100 × 0.25 + 100 × 0.20 = 100`. Code Quality evaluates the proposed plan change, not a production-code diff. This score is not implementation or release approval.
 
 ## Module Dependency Graph
 
@@ -52,7 +51,7 @@ graph TD
   Native --> Server[Existing server task and label routes]
 ```
 
-This is a proposed responsibility map, not a verified future import graph. Keep the helper independent of React components, with narrow callbacks or results for projection and progress. The shared operation boundary is justified by rename and existing removal; no generic workflow engine is needed. F2 concerns runtime ownership between these modules, not an import-direction violation.
+This is a proposed responsibility map, not a verified future import graph. Keep the helper independent of React components, with narrow callbacks or results for projection and progress. The shared operation boundary is justified by rename and existing removal; no generic workflow engine is needed. The revised runtime contract explicitly releases modal ownership before remote review without discarding operation evidence.
 
 ## Test suite map and coverage assessment
 
@@ -61,39 +60,25 @@ This is a proposed responsibility map, not a verified future import graph. Keep 
 - Supporting native/server tests exist; server HTTP integration tests are in `server/tests/api.rs` and `server/tests/task_dates.rs`. The plan does not require a new server protocol and scopes extra backend checks to actual implementation changes.
 - Planned real-device checks cover focus, keyboard/mobile handoff, and multi-client interaction. No browser/device end-to-end execution or new passing test count is claimed in this review.
 - The proposed delayed-rescan removal regression directly addresses task-23's known coverage gap. Last-write-wins concurrency and labels-only notification limits are explicitly documented tradeoffs, not undisclosed defects in this plan.
+- Revised collision tests distinguish normal multi-task finalization, partial-task retry, label-only retry, verified uncertain label completion, and independent late-target collisions. Revised lifecycle tests exercise an in-dialog Review update action, modal release, approved application, retained progress, and absence of writes until a new explicit confirmation.
 
 ## Top Findings
 
-### F1: Warning — R6 Domain Model Distortion: Collision checks do not distinguish own progress
+No active Critical, Warning, or Suggestion findings in this revised plan.
 
-**Location:** `2-plan.md:26,49–53,58–60,90`.
+## Previous finding resolution
 
-**Symptom:** The plan rejects any target present in task-derived, remembered, or staged projects and repeats that check before final label persistence. It also requires retries to preserve completed task writes. After the first acknowledged `old → new` task update, `new` necessarily appears in task-derived projects; after a successful but uncertain label PUT, it may appear in remembered labels too. No explicit rule distinguishes those operation-owned references from an independently pre-existing or newly conflicting project. Literal reapplication of the initial check would reject successful finalization and partial retries as attempts to merge projects.
+- **F1 — resolved in the plan:** `2-plan.md:26–27,43,53–57,71,89,100` separates initial availability from continuation ownership, records exact task and label evidence, preserves provenance across explicitly confirmed retry attempts, and retains collision blocking for unknown target references. An uncertain label PUT whose intended outcome is observed can complete without a second write or false collision. These are observable-content checks, not claims of reliable author attribution or transactional protection. This addresses the previous Domain-Driven Design invariant-ownership concern without introducing a permanent alias mechanism.
+- **F2 — resolved in the plan:** `2-plan.md:36–39,75,90,101` defines ready/checking/running/stopped outcomes, separates result retention from dialog visibility and write authority, specifies in-dialog Review update and synchronous modal release, and requires application guards to allow a paused result while blocking an active operation. Close/Escape/backdrop after partial completion preserve a reopenable result; remote approval and reopening cannot resume writes. Explicit revalidation and Retry/Finish labels confirmation are required. The end-to-end lifecycle test explicitly rejects stale replay and inert-background-control shortcuts, addressing the previous Orthogonality and Information Leakage concern.
 
-**Source:** Domain-Driven Design — Aggregate Roots and invariant ownership. The invariant is not simply “the target never exists”; it is “the target was available when this operation began, and later target references are consistent with its verified progress.”
-
-**Consequence:** A rename can complete task writes but fail its own final collision check, leaving labels, filters, and draft mappings incomplete. A label-only retry can remain blocked even after the desired task changes have safely landed. Ignoring all later target references instead would accidentally permit genuine foreign collisions.
-
-**Remedy:** Specify separate initial and continuation collision predicates. Capture the initial target namespace, track exact acknowledged task responses and verified label outcomes under the same scoped operation, and permit only target references attributable to that progress. On retry, retain that provenance and revalidate it against current approved content; unknown target references or unrelated changes require explicit resolution. Define uncertain label PUT handling as verification of completion or an actionable unresolved result, not automatically as a new collision. Add normal multi-task completion, partial-task retry, label-only retry, and an independent late-target collision test with distinct expected results.
-
-### F2: Warning — R2 Change Propagation: Partial rename has no explicit remote-review handoff
-
-**Location:** `2-plan.md:35,41–44,51–53,59,68–69`; current `app/src/App.tsx:169–171` and `app/src/components/TodoPane.tsx:199–203,221`.
-
-**Symptom:** The plan keeps the rename dialog and its input/error state after failure, registers it as a task-modal owner, and requires foreign divergence to stop writes until remote approval plus a new confirmation. It does not define how that dialog suspends or closes for Review update while preserving partial progress. App currently hides remote offers whenever a task or other native dialog owns the interaction. TodoPane's existing `reviewRemote()` suspends editing and clears removal state only; it has no rename state to release. Its application guard must also distinguish an actively running rename from a suspended result.
-
-**Source:** The Pragmatic Programmer — Orthogonality; A Philosophy of Software Design — Information Hiding and Leakage. Operation recovery depends on modal ownership in a separate orchestration layer, but the required lifecycle contract is unspecified.
-
-**Consequence:** A straightforward implementation can leave a partial rename holding the very dialog ownership that hides its required approval prompt. Closing the dialog by clearing all rename state can instead lose task/label progress and the provenance needed for safe retry. Synthetic clicks on controls outside a native modal can make a headless test appear to work while the real interaction remains inaccessible.
-
-**Remedy:** Define explicit running, paused-for-review, failed, labels-pending, and completed outcomes, including which state owns the modal and task-action lock. Provide an accessible in-dialog Review update or Close and review action that synchronously releases modal ownership, retains source/target/progress/provenance separately from open state, and routes through the normal task review/application path. Reopening the result or accepting remote content must not resume old writes; require a fresh explicit confirmation. Define Escape/backdrop behavior after partial writes without implying rollback. Test the full partial-write → foreign divergence → modal handoff → approval → explicit retry flow, asserting that no stale mutation occurs between approval and confirmation.
+Both resolutions are design commitments to verify during implementation, not statements that the current code already implements them. The initial review remains available in commit `622cd10`.
 
 ## Verification and limits
 
-Read the goal and full plan, then inspected current task/draft components, filter/picker ownership, App's remote-offer gating, the coordinator's mutation and application lifecycle, representative approval tests, the current test-file inventory, and score history. Findings are plan contradictions or missing contracts supported by current code; they are not reproduced defects in an unimplemented rename feature.
+Read the full revised plan and the previous findings, compared the change from `e5789f3` to `dafa746`, and rechecked current App remote-offer gating, TodoPane review/application guards, coordinator mutation settlement, submodule state, and score history. The existing app remains at `cb617f8` and server at `06f28ab`; neither submodule has uncommitted changes. The previously inspected test-suite map is unchanged by these documentation-only revisions.
 
-No implementation code, goal, or plan was modified. No tests, builds, deployments, or live requests were run for this documentation-only review. The previous task's test results are not presented as fresh verification. `todo.md` remains untouched.
+No implementation code, goal, or plan was modified. No tests, builds, deployments, or application-data requests were run for this documentation-only review. No fresh test result or completed manual acceptance is claimed. Existing multi-request partial completion, GET/PUT races, older label writers, and labels-only discovery delays remain explicitly accepted limits. `todo.md` remains untouched.
 
 ## Recommendation
 
-Update the plan with operation-aware collision ownership and an explicit suspend/review/reconfirm lifecycle. Keep the existing non-atomic API decision and documented cross-client label limitations; neither warning requires a new server transaction or permanent alias registry. Once these contracts and their test expectations are explicit, proceed with implementation and the planned focused removal regression. A deeper follow-up should focus on domain-operation state ownership rather than adding more generic abstractions.
+Proceed to implementation using the revised plan. Preserve its operation-aware collision rules, suspend/review/reconfirm lifecycle, draft protection, and explicit concurrency limits. Prioritize real-pane regressions for partial retry and modal handoff alongside the delayed-rescan removal fix; passing isolated helper tests alone is not feature sign-off.
