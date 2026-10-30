@@ -7,6 +7,8 @@
 
 live update -> notify user that something changes on other client
 
+update goal: remove live sync. when notify user, ask user to update it or not
+
 ## goal
 
-Notify the user in the app when a task or note change from another client is received through live updates. Keep existing synchronization and unsaved-edit protection intact, and avoid notifying users about their own changes.
+Stop automatically applying task and note changes from other clients. Instead, detect remote changes, notify the user, and ask whether to load the updated content. Apply remote changes only when the user accepts; otherwise, leave the current content unchanged. Preserve unsaved-edit protection and avoid notifying users about their own changes.
