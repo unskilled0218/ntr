@@ -328,5 +328,16 @@
       "suggestion": 0
     },
     "scope": "21-remove-priority vs main: parent 6e662c7..f5db087, app 0f634d3..4f4f871, server 55ded61..9a635f1 (branch code review; final-serialization gap, plan-derived existing-description restriction, and create-path coverage gap; no fixes applied)"
+  },
+  {
+    "date": "2026-10-30",
+    "mode": "Health Dashboard",
+    "score": 97,
+    "findings": {
+      "critical": 0,
+      "warning": 3,
+      "suggestion": 0
+    },
+    "scope": "tasks/22-edit-projects/2-plan.md at e41d263 (plan review only; per-resource convergence, cross-client label writers, and inline draft project references; no implementation changes or tests run)"
   }
 ]
