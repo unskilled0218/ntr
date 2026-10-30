@@ -3,13 +3,9 @@
 - [Components](#components)
 - [Run](#run)
 
-ntr is a local-first task manager and Markdown notes app. The Tauri client works with local files on its own or connects to the optional Rust server for shared access and live updates.
+ntr is a local-first task manager and Markdown notes app. Use local files or connect the Tauri client to the optional server.
 
-An unreachable server automatically switches the client to local files without clearing its saved URL. Reconnect explicitly through settings; see [connection safety](app/docs/server-connection.md).
-
-Remote updates show only the diff and compact review controls before approval. Declining keeps drafts and server data untouched; pending note updates pause autosave. See [update approval](app/docs/live-sync.md).
-
-Pencil/trash project actions preserve drafts and recovery. Successful renames dismiss automatically while the create-task project selector stays open underneath. See [project actions](app/docs/project-renaming.md).
+See [server connection and fallback](app/docs/server-connection.md), [remote update approval](app/docs/live-sync.md), and [project actions](app/docs/project-renaming.md).
 
 ## Components
 
