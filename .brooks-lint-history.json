@@ -438,5 +438,16 @@
       "suggestion": 0
     },
     "scope": "27-update-notification-diff-only vs main: parent 6cfe1b7..f5f2838, app cb617f8..2c35fb5 (all branch changes, including tasks 24–26; reproduced cross-destination suspended edit draft mutation; 668 existing frontend tests and build passed on committed archive; one isolated failing probe; no fixes applied)"
+  },
+  {
+    "date": "2026-10-30",
+    "mode": "Health Dashboard",
+    "score": 96,
+    "findings": {
+      "critical": 0,
+      "warning": 3,
+      "suggestion": 0
+    },
+    "scope": "tasks/28-show-local-files-when-server-unavailable/2-plan.md at 76f9f41 (plan review only; mutation readiness during destination transitions, native backup ordering, and partial reconnect reconciliation semantics; no implementation or plan changes, no tests run)"
   }
 ]
