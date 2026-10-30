@@ -5,6 +5,8 @@
 
 ntr is a local-first task manager and Markdown notes app. The Tauri client works with local files on its own or connects to the optional Rust server for shared access and live updates.
 
+Remote changes ask before updating. Declining keeps drafts and server data untouched; pending note updates pause autosave. See [update approval](app/docs/live-sync.md).
+
 ## Components
 
 - [app](app/README.md) — Tauri, React, and TypeScript client.
