@@ -7,7 +7,7 @@ ntr is a local-first task manager and Markdown notes app. The Tauri client works
 
 Remote changes ask before updating. Declining keeps drafts and server data untouched; pending note updates pause autosave. See [update approval](app/docs/live-sync.md).
 
-Projects can be renamed across tasks and remembered choices, with preserved drafts and reviewable partial progress. See [project renaming](app/docs/project-renaming.md).
+Pencil/trash project actions are available in filter and create-task selectors, with preserved drafts and selector-based recovery. See [project actions](app/docs/project-renaming.md).
 
 ## Components
 
