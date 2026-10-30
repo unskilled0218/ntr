@@ -2,63 +2,55 @@
 
 - [Module dependency graph](#module-dependency-graph)
 - [Top findings](#top-findings)
-  - [Critical](#critical)
-- [Resolved warnings](#resolved-warnings)
+- [Resolved findings](#resolved-findings)
 - [Recommendation](#recommendation)
 
 **Mode:** Health Dashboard
 
-**Scope:** `tasks/32-align-app-release-process/2-plan.md` at `1223717`, including local gitignored signing storage, APK-only distribution, tracked Android configuration preservation, and expected certificate verification. Scores assess the plan, not the entire project. No implementation changes or build tests were performed.
+**Scope:** `tasks/32-align-app-release-process/2-plan.md` at `06ac334`. This reviews the release plan, not implementation quality or live publication readiness. No implementation changes or build tests were performed.
 
-**Composite Score:** 95/100
+**Composite Score:** 100/100
 
-**Trend:** 91 → 95 (+4) compared with the preceding review of this plan.
+**Trend:** 95 → 100 (+5) compared with the preceding review of this plan.
 
 | Dimension | Score | Top finding |
 |-----------|-------|-------------|
-| Code Quality | Skipped | No uncommitted diff; this is a plan review. |
-| Architecture | 100/100 | Both Android boundary concerns are addressed in the plan. |
-| Tech Debt | 85/100 | Completed-release verification has no independent path. |
-| Test Quality | 100/100 | No additional test-plan finding within this scope. |
+| Code Quality | Skipped | No uncommitted diff. |
+| Architecture | 100/100 | No remaining plan-level finding. |
+| Tech Debt | 100/100 | Completed-release verification now has an independent path. |
+| Test Quality | 100/100 | Planned tests cover the identified release failure paths. |
 
-Local `app/android-signing/` storage includes ignore rules, restrictive permissions, migration, preservation of original files, and encrypted backup guidance. AAB and Google Play App Signing remain excluded. Both preceding warnings are now addressed; no new warnings were identified. The earlier critical finding remains deferred by user direction.
-
-The planned test map covers local validation and identity checks, isolated Git/build/service integration, and APK signature checks. Actual unit/integration/end-to-end counts cannot be assessed before those tests exist.
+The planned test map includes local validation and identity checks, isolated Git/build/service integration, and APK signature checks. Actual unit/integration/end-to-end counts and test quality cannot be established before implementation.
 
 ## Module dependency graph
 
 ```mermaid
 graph TD
-  Plan[Release plan] --> Publisher[App release publisher]
-  Publisher --> Source[Tracked app source and version metadata]
-  Publisher --> Build[Isolated desktop and Android builds]
-  Build --> Android[Tracked Android Gradle project]
-  Build --> Signing[Gitignored app/android-signing files]
-  Publisher --> Forgejo[Forgejo tags, releases, and assets]
-  Tests[Planned isolated tests] --> Publisher
+  Publisher[App release publisher] --> Preflight[Read-only remote-state preflight]
+  Preflight --> Absent[Absent release]
+  Preflight --> Complete[Complete release]
+  Preflight --> Conflict[Partial or conflicting state: stop]
+  Absent --> Build[Isolated build from tracked source]
+  Build --> Signing[Gitignored android-signing files]
+  Build --> Certificate[Expected public certificate fingerprint]
+  Build --> Publish[Annotated tag, release, and assets]
+  Complete --> Verify[Original tag-bound manifest and remote asset bytes]
+  Verify --> Exit[Exit without build or remote writes]
 ```
 
 ## Top findings
 
-### Critical
+No remaining critical, warning, or suggestion findings were identified in this plan review. Previously deferred does not mean permanently suppressed: the critical finding is now resolved by explicit changes to the plan.
 
-**R6 — Completed-release verification has no independent path**
+## Resolved findings
 
-Symptom: `2-plan.md:32-36` requires a build and completed-release verification but does not define how to detect a completed release before building or reconstruct its original manifest without a rebuild. `2-plan.md:67-68` acknowledges nondeterministic signing and the deferred finding.
+- Completed-release verification: `2-plan.md:31-32,44,56,64,72` now defines absent/complete/partial remote-state branching before build prerequisites. Complete releases use the original tag-bound manifest and downloaded remote bytes without rebuilding, signing-key access, dependency installation, tests, or remote writes. Tests cover missing build tools and keys, a nondeterministic fake builder, corrupted or inconsistent remote evidence, and concurrent state changes.
+- Android tracked configuration: `2-plan.md:34,46,54,63` preserves the checked-out Android project, limits generation to identified ignored support files, checks tracked source after setup and build, and tests refusal before publication when it changes.
+- APK signing identity: `2-plan.md:35,46,54,63` pins the trusted certificate fingerprint separately from secrets, verifies each release APK against it, tests wrong-key and missing-fingerprint cases, and requires explicit approval for intentional changes.
+- Scope and secret storage: `2-plan.md:16,25,33,45,53,62` retains APK-only distribution, gitignored local `app/android-signing/`, restrictive permissions, safe migration, preservation of originals, and encrypted backup guidance. AAB and Google Play App Signing remain excluded.
 
-Source: Code Complete — defensive programming and explicit error paths.
-
-Consequence: A retry can need unavailable signing tools or produce different digests and reject a valid release; a rebuilt manifest cannot establish the original artifact identity.
-
-Remedy: If the user later chooses to address this finding, define a read-only remote-state preflight and verify a completed release using its tag-bound original manifest and remote asset bytes, without rebuilding or writing. Test nondeterministic builds and unavailable signing tools.
-
-## Resolved warnings
-
-- Android regeneration: `2-plan.md:32,43,51,59` now requires building the tracked Android project without regeneration, checking tracked source after preparation and builds, refusing changes before publication, and testing that refusal.
-- APK signing identity: `2-plan.md:33,43,51,59` now pins a trusted public certificate fingerprint independently of the supplied private key, checks each APK before remote writes, tests wrong-key and absent-fingerprint cases, and requires approval for intentional changes.
-
-These are plan-level resolutions; implementation and device behavior remain unverified.
+These are plan-level resolutions, not claims that implementation, device updates, or live Forgejo compatibility have been verified.
 
 ## Recommendation
 
-No further warning-driven plan changes are needed from this review. Preserve the APK-only scope and local gitignored signing storage. The completed-release finding remains deferred by user direction, not resolved or silently approved. Balanced scoring gives architecture 100, debt 85, and test planning 100; redistributing the skipped code-quality weight yields 95. Local fake tests cannot prove live Forgejo or device behavior.
+The plan is ready for implementation review gates with no further plan changes requested by this review. Preserve the separate read-only verification path and test its lack of build and signing dependencies explicitly. Real publication still requires separate approval, prepared credentials and tools, exclusive writers, and verification of deployed API compatibility. The score uses balanced deductions with the skipped code-quality weight redistributed across the other dimensions.
