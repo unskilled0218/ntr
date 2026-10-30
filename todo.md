@@ -1,7 +1,5 @@
 
-- edit projects
-
-- live update -> notify user that something changes on other client
+- edit projects' name
 
 ## server
 
