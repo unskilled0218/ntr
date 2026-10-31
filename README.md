@@ -18,7 +18,7 @@ Both components are Git submodules. Initialize them after cloning:
 git submodule update --init --recursive
 ```
 
-The app uses [guarded artifact publication](app/docs/forgejo-publishing.md); Android signing files stay local and gitignored.
+The app uses [guarded artifact publication](app/docs/forgejo-publishing.md) with [live progress logs](app/docs/forgejo-publishing.md#progress-logs); raw tool output stays private, and Android signing files stay local and gitignored.
 
 ## Run
 
