@@ -23,7 +23,7 @@ USER ${USER_NAME}
 EXPOSE 1420
 
 RUN rustup default stable &&\
-  rustup target add x86_64-unknown-linux-gnu &&\
+  rustup target add x86_64-unknown-linux-gnu aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android &&\
   # Watchman
   wget https://github.com/facebook/watchman/releases/download/v2025.05.26.00/watchman-v2025.05.26.00-linux.zip &&\
   unzip watchman-v2025.05.26.00-linux.zip &&\
@@ -36,8 +36,7 @@ RUN rustup default stable &&\
   mv ${ANDROID_HOME}/cmdline-tools/cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest &&\
   yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses &&\
   yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-36" "build-tools;35.0.0" "ndk;27.0.12077973" &&\
-  echo 'export PATH="$PATH:${ANDROID_HOME}/platform-tools"' >> /home/${USER_NAME}/.bashrc &&\
-  rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+  echo 'export PATH="$PATH:${ANDROID_HOME}/platform-tools"' >> /home/${USER_NAME}/.bashrc
 
 USER root
 
