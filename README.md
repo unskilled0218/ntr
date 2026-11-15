@@ -10,13 +10,15 @@ See [server connection and fallback](app/docs/server-connection.md), [remote upd
 ## Components
 
 - [app](app/README.md) — Tauri, React, and TypeScript client.
-- [server](server/README.md) — Rust HTTP server backed by plain files.
+- [server](server/README.md) — Rust HTTP server with file-backed or Home Assistant tasks and Markdown notes.
 
 Both components are Git submodules. Initialize them after cloning:
 
 ```sh
 git submodule update --init --recursive
 ```
+
+The server can also use [Home Assistant To-do](server/docs/home-assistant.md) for tasks. HA credentials and certificate trust stay on the server; Markdown notes remain file-backed.
 
 The app uses [guarded artifact publication](app/docs/forgejo-publishing.md) with [live progress logs](app/docs/forgejo-publishing.md#progress-logs); raw tool output stays private, and Android signing files stay local and gitignored.
 
