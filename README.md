@@ -20,6 +20,8 @@ git submodule update --init --recursive
 
 The server can also use [Home Assistant To-do](server/docs/home-assistant.md) for tasks. HA credentials and certificate trust stay on the server; Markdown notes remain file-backed.
 
+Configure HA with the server's [`.env.example`](server/.env.example); see [direct and Compose setup](server/docs/home-assistant.md). No client-side HA configuration is needed.
+
 The app uses [guarded artifact publication](app/docs/forgejo-publishing.md) with [live progress logs](app/docs/forgejo-publishing.md#progress-logs); raw tool output stays private, and Android signing files stay local and gitignored.
 
 ## Run
