@@ -20,6 +20,7 @@ Load server-side HA connection settings from `.env`, with the accepted example, 
 ## Validation
 
 - Add parser/configuration tests using explicit temporary files and environment maps, without global environment mutation. Cover missing file, valid quoted values/comments, process overrides including empty values, defaults, malformed input, unreadable paths, and sanitized errors containing no sentinel secret values.
+- Address review F1 with a directory at the selected `.env` path as a deterministic read-failure fixture, including child-process redaction/no-write assertions. Do not rely on permission-bit-only fixtures that privileged runners can still read.
 - Add child-process startup tests with an isolated working directory/environment: `.env` selects HA without manual exports, process variables win, a parent `.env` is not searched, malformed/unreadable files fail before resource writes, and no `.env` preserves file-backed startup. Use fixture paths and loopback ports, never deployment credentials.
 - Check example keys and Git-ignore rules, and verify the Compose override wiring and path mounts. Run `docker compose ... config` only when Compose is available; do not start containers or publish images. Record unavailable tooling explicitly.
 - Run server `cargo test --locked`, `cargo fmt --check`, and `cargo clippy --all-targets -- -D warnings`; rerun the existing disposable-TLS HA serializer contract. Validate version mirrors and Git whitespace checks.
