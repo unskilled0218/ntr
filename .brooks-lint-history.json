@@ -581,5 +581,12 @@
       "suggestion": 0
     },
     "scope": "tasks/35-homeassistant-todo/3-plan.md at 7705306 (plan review only; external completion lifecycle projection, datetime editor intent, and mutation/poll origin provenance; no implementation or plan changes, tests run, or live HA operations)"
+  },
+  {
+    "date": "2026-11-15",
+    "mode": "Health Dashboard",
+    "score": 100,
+    "findings": { "critical": 0, "warning": 0, "suggestion": 1 },
+    "scope": "tasks/36-ha-env-configuration/3-plan.md at ad56c81 (plan review only; deterministic unreadable-dotenv fixture suggestion; no implementation changes or tests run)"
   }
 ]
