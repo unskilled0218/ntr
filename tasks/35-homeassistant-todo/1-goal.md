@@ -16,4 +16,4 @@ Use the self-hosted Home Assistant To-do integration instead of todo.md for task
 
 ## Suggestions
 
-Configure the Home Assistant connection once on the ntr server, without distributing its token to clients. Keep certificate verification enabled and trust the supplied certificate rather than bypassing HTTPS validation. Confirm the Home Assistant URL, target to-do lists, and handling of existing tasks during planning.
+Accepted: configure the Home Assistant connection once on the ntr server, without distributing its token to clients. Keep certificate verification enabled and trust the supplied certificate rather than bypassing HTTPS validation. Require the Home Assistant URL and target to-do list in server configuration. Preserve existing task files without automatic migration or upload.
