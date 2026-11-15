@@ -14,4 +14,4 @@ Allow ntr server to load its Home Assistant connection settings from a .env file
 
 ## Suggestions
 
-Provide a documented .env.example, ignore real .env files in Git, and let existing environment variables override file values. Keep the HA token in its existing protected token file and configure its path in .env. Explain how .env settings reach the server in both direct and Docker Compose runs.
+Accepted: provide a documented .env.example, ignore real .env files in Git, and let existing environment variables override file values. Keep the HA token in its existing protected token file and configure its path in .env. Explain how .env settings reach the server in both direct and Docker Compose runs.
