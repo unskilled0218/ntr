@@ -588,5 +588,12 @@
     "score": 100,
     "findings": { "critical": 0, "warning": 0, "suggestion": 1 },
     "scope": "tasks/36-ha-env-configuration/3-plan.md at ad56c81 (plan review only; deterministic unreadable-dotenv fixture suggestion; no implementation changes or tests run)"
+  },
+  {
+    "date": "2026-11-16",
+    "mode": "Health Dashboard",
+    "score": 96,
+    "findings": { "critical": 0, "warning": 2, "suggestion": 1 },
+    "scope": "Task 37 plan at 3be4a2c; pending-move admission/release, admin management opt-in, catalog-only updates; plan review only, no tests run"
   }
 ]
