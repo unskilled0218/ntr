@@ -17,4 +17,4 @@ Simplify the parent, app, and server documentation. Remove unnecessary or duplic
 
 ## Suggestions
 
-Keep READMEs brief and use dedicated topic pages. Preserve essential setup, security, signing, release, and recovery guidance. Leave historical task archives and release records unchanged; fix maintained links affected by deleted guides without rewriting history. Do not modify `todo.md`, implementation code, or unrelated app changes.
+Accepted: keep READMEs brief and use dedicated topic pages. Preserve essential setup, security, signing, release, and recovery guidance. Leave historical task archives and release records unchanged; fix maintained links affected by deleted guides without rewriting history. Do not modify `todo.md`, implementation code, or unrelated app changes.
