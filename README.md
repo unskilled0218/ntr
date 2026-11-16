@@ -17,6 +17,6 @@ From `app/`, run `npm ci` and `npm run tauri dev`. From `server/`, run `cargo ru
 
 ## Documentation
 
-- [App setup](app/README.md), [server connection](app/docs/server-connection.md), and [update approval](app/docs/live-sync.md).
+- [App setup](app/README.md), [server connection](app/docs/server-connection.md), [update approval](app/docs/live-sync.md), and [modal styling](app/docs/modal-styling.md).
 - [Server setup](server/README.md), [HA lists and recovery](server/docs/home-assistant.md), and [HTTP API](server/docs/api.md).
 - [App publication](app/docs/forgejo-publishing.md), [Android signing](app/docs/android-signing.md), and [server publication](server/docs/release.md).
