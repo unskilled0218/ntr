@@ -1,48 +1,22 @@
 # ntr
 
-- [Components](#components)
 - [Run](#run)
+- [Documentation](#documentation)
 
-ntr is a local-first task manager and Markdown notes app. Use local files or connect the Tauri client to the optional server.
+Tasks and Markdown notes for desktop and Android. Work locally or connect to ntr server; Home Assistant credentials stay on the server.
 
-See [server connection and fallback](app/docs/server-connection.md), [remote update approval](app/docs/live-sync.md), and [project actions](app/docs/project-renaming.md).
+## Run
 
-## Components
-
-- [app](app/README.md) — Tauri, React, and TypeScript client.
-- [server](server/README.md) — Rust HTTP server with file-backed or Home Assistant tasks and Markdown notes.
-
-Both components are Git submodules. Initialize them after cloning:
+Initialize the app and server submodules:
 
 ```sh
 git submodule update --init --recursive
 ```
 
-The server can also use [Home Assistant To-do](server/docs/home-assistant.md) for tasks. HA credentials and certificate trust stay on the server; Markdown notes remain file-backed.
+From `app/`, run `npm ci` and `npm run tauri dev`. From `server/`, run `cargo run --locked` or follow [Docker setup](server/docs/docker-compose.md). The server defaults to `http://127.0.0.1:8080` and has no authentication.
 
-HA lists appear as projects, including empty lists. Unselected tasks use the configured default; changing lists requires a confirmed move. Administrative list creation, display-name renaming, and empty-list deletion require server opt-in. See [list management and recovery](server/docs/home-assistant.md#lists-and-projects).
+## Documentation
 
-Configure HA with the server's [`.env.example`](server/.env.example); see [direct and Compose setup](server/docs/home-assistant.md). No client-side HA configuration is needed.
-
-The app uses [guarded artifact publication](app/docs/forgejo-publishing.md) with [live progress logs](app/docs/forgejo-publishing.md#progress-logs); raw tool output stays private, and Android signing files stay local and gitignored.
-
-## Run
-
-Start the app:
-
-```sh
-cd app
-npm install
-npm run tauri dev
-```
-
-Start the optional server in another terminal:
-
-```sh
-cd server
-cargo run
-```
-
-The server listens on `http://127.0.0.1:8080` by default and has no authentication. See the component READMEs for configuration, testing, and release details.
-
-Priority is no longer a task feature. Legacy data stays intact with the new client and server; see [compatibility limits](app/docs/task-text.md) before using an older server.
+- [App setup](app/README.md), [server connection](app/docs/server-connection.md), and [update approval](app/docs/live-sync.md).
+- [Server setup](server/README.md), [HA lists and recovery](server/docs/home-assistant.md), and [HTTP API](server/docs/api.md).
+- [App publication](app/docs/forgejo-publishing.md), [Android signing](app/docs/android-signing.md), and [server publication](server/docs/release.md).
