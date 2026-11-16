@@ -20,6 +20,8 @@ git submodule update --init --recursive
 
 The server can also use [Home Assistant To-do](server/docs/home-assistant.md) for tasks. HA credentials and certificate trust stay on the server; Markdown notes remain file-backed.
 
+HA lists appear as projects, including empty lists. Unselected tasks use the configured default; changing lists requires a confirmed move. Administrative list creation, display-name renaming, and empty-list deletion require server opt-in. See [list management and recovery](server/docs/home-assistant.md#lists-and-projects).
+
 Configure HA with the server's [`.env.example`](server/.env.example); see [direct and Compose setup](server/docs/home-assistant.md). No client-side HA configuration is needed.
 
 The app uses [guarded artifact publication](app/docs/forgejo-publishing.md) with [live progress logs](app/docs/forgejo-publishing.md#progress-logs); raw tool output stays private, and Android signing files stay local and gitignored.
