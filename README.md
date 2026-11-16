@@ -3,7 +3,7 @@
 - [Run](#run)
 - [Documentation](#documentation)
 
-Tasks organized by lists and Markdown notes for desktop and Android. Work locally or connect to ntr server; Home Assistant credentials stay on the server.
+Tasks organized by [lists](app/docs/project-renaming.md) and Markdown notes for desktop and Android. Work locally or connect to ntr server; Home Assistant credentials stay on the server.
 
 ## Run
 
