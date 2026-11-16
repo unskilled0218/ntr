@@ -22,4 +22,4 @@ Remove the visible `Changes this draft only.` text from the Add list flow. Chang
 
 ## Suggestions
 
-Check nested-dialog ownership, focus restoration, scrolling, overflow, and stacking rather than hiding focus indicators. Cover desktop/compact layouts and applicable local/HA list flows. Preserve validation, busy-operation safeguards, and existing confirmation/recovery behavior; check Escape/backdrop handling for regressions. Leave `todo.md` and unrelated work unchanged.
+Accepted: check nested-dialog ownership, focus restoration, scrolling, overflow, and stacking rather than hiding focus indicators. Cover desktop/compact layouts and applicable local/HA list flows. Preserve validation, busy-operation safeguards, and existing confirmation/recovery behavior; check Escape/backdrop handling for regressions. Leave `todo.md` and unrelated work unchanged.
