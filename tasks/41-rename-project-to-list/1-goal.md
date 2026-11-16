@@ -15,4 +15,4 @@ Use “List” instead of “Project” consistently across the app and server: 
 
 ## Suggestions
 
-Update code, tests, and documentation together rather than only replacing display text. Review API fields, persisted settings/storage keys, and task syntax explicitly; use compatibility handling or migration where renaming would otherwise break existing clients or data. Leave historical records and `todo.md` unchanged.
+Accepted: update code, tests, and documentation together rather than only replacing display text. Review API fields, persisted settings/storage keys, and task syntax explicitly; use compatibility handling or migration where renaming would otherwise break existing clients or data. Leave historical records and `todo.md` unchanged.
