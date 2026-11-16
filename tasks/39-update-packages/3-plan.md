@@ -20,8 +20,8 @@ Update the app npm dependency stack, compatible app-native Rust dependencies, an
 
 ## Verification
 
-- App: clean install, `npm audit` and production-only audit, full frontend tests, TypeScript/Vite build, release-tool tests/validation, and both real serializer contracts where native prerequisites permit. Inspect `npm outdated` and document deliberate exceptions. Aim for zero npm advisories, not merely removal of high-severity entries.
-- Native app: attempt locked tests and strict Clippy with available system libraries; report missing packages/targets rather than installing them. Preserve vendor/native-platform limitations and do not claim Android/Windows/macOS validation from a Linux build.
+- App: clean install, then rerun `npm audit` and production-only audit against the installed locked graph, full frontend tests, TypeScript/Vite build, release-tool tests/validation, and both real serializer contracts where native prerequisites permit. Inspect `npm outdated` and document deliberate exceptions. Require a clean production audit and aim for zero full-graph advisories, not merely removal of high-severity entries; explicitly record any unresolved advisory rather than force incompatible overrides.
+- Native app: attempt locked tests and strict Clippy; pkg-config currently finds DBus, GTK, and WebKitGTK, so do not assume the earlier blocker remains. Report any newly missing packages/targets rather than installing them. Preserve vendor/native-platform limitations and do not claim Android/Windows/macOS validation from a Linux build.
 - Server: locked tests, formatting, strict Clippy, Compose rendering, release validation, and generated-CA HA contract covering trust, origin filtering, list management, moves, and persistence faults. Keep security-related tests unchanged except API compatibility changes.
 - Inspect Cargo update output and resolved TLS features. Run Rust security tooling only if already available; otherwise report the audit limitation and avoid a Rust vulnerability-free claim. Check version mirrors and Git whitespace.
 
