@@ -1,0 +1,52 @@
+# Plan
+
+- [Scope](#scope)
+- [Server model](#server-model)
+- [List management](#list-management)
+- [Task routing and moves](#task-routing-and-moves)
+- [Client](#client)
+- [Verification](#verification)
+- [Delivery](#delivery)
+
+## Scope
+
+Implement multiple HA lists as client projects, including Local To-do creation, HA display-name renaming, confirmed cross-list moves, and confirmed empty-list deletion. Retain file/local backends, notes, token-file authentication, verified HTTPS/private CA trust, lifecycle dates, datetime offsets, descriptions, and notification approval. No deployment, publication, push, or live HA writes. No mockup was requested; use existing dialogs and selectors.
+
+## Server model
+
+1. Retain `HA_TODO_ENTITY` as the required default entity. Discover visible `todo.*` entities from HA states; all become projects, including empty lists. Identify projects by entity ID, not friendly name; duplicate/space-containing names remain valid and distinguishable. Do not derive membership from summary tokens or automatically import/export those tokens as list assignments.
+2. Add explicit optional `list_id` to task DTOs and create/update requests, plus a list catalog endpoint with ID, display name, default flag, and per-operation capabilities. Omitted create routing uses the default; omitted update routing preserves the current list. An explicitly empty selector chooses the default. In HA mode task `projects` represents list membership for existing filtering, but `raw`/`description` remain lossless summary projections; client serializers must not inject display names as `+tokens`. Non-HA APIs keep existing contracts and reject unsupported explicit routing.
+3. Extend the serialized coordinator to use `(entity_id, UID)` keys, one global numeric counter, and list-aware snapshots/features/services. Atomically migrate schema 1 metadata only when the old normalized URL/default entity matches; preserve every existing ID, lifecycle value, and counter. Schema 2 binds the normalized server URL and records entity-qualified keys, catalog identity, and durable move recovery state. Reject corrupt maps, duplicate IDs, unsupported schemas, or source mismatch; never silently reset IDs.
+4. Fetch and validate the complete catalog and every selected list before replacing accepted snapshots. Missing/unavailable lists or upstream failures must not look like empty/deleted tasks. Preserve monotonic IDs, deleted-item tombstones, and serialized polling/mutations. Catalog-only changes and empty-list changes notify clients through the existing tasks resource; mutation authors must still receive concurrent external changes.
+
+## List management
+
+1. Use HA REST Local To-do config flow: `POST /api/config/config_entries/flow` with `handler: local_todo`, then the returned flow with `todo_list_name`. Read the created config-entry ID; resolve its entity through the entity registry, never by guessing a slug or friendly name. Validate flow results and read back the discovered list. Never replay a timed-out creation automatically.
+2. Add authenticated server-only WSS transport using the same token, hostname checks, custom trust roots, time limits, and bounded messages as HTTPS. Use documented entity-registry list/update commands to associate config entries and rename the entity's display `name`, keeping entity ID and task IDs unchanged. Renaming a project means changing HA's displayed list name, not its storage key or config-entry title. Surface administrative permission failures without leaking tokens or upstream bodies. Close short-lived sockets reliably.
+3. Expose confirmed list mutations through dedicated endpoints, separate from remembered labels. Validate names as nonempty, bounded single-line display strings; reject duplicate target names rather than merge. Enable deletion only for an unambiguous Local To-do config entry that owns exactly this one to-do entity, and never the default. Re-read catalog/registry and both task statuses immediately before deleting `/api/config/config_entries/entry/{id}`; reject nonempty lists and read back disappearance. HA offers no atomic empty-check-and-delete API: document the remaining external-writer race and require exclusive use during deletion. Do not claim transactional protection against HA/external writers.
+4. List mutations have pending/success/uncertain/error states. A lost response or ambiguous readback triggers refresh/review, not an automatic retry. Unsupported providers and non-admin tokens retain supported task operations without falsely advertising destructive list management.
+
+## Task routing and moves
+
+1. Bind every task operation to its actual source list; same UIDs/summaries in different lists never collide. Validate target list and features before any writes. Explicit same-list saves stay ordinary updates. Require a dedicated confirmation flag and expected source/list revision for a different target; reject stale confirmations before writes.
+2. Implement moves as a durable, fail-closed copy/verify/delete operation, never HA `todo/item/move` (which only reorders). Persist intent before copying; preserve summary, native description, status, due/date offset, numeric ID, and ntr lifecycle metadata. Identify the new target UID by a unique before/after delta and full content verification; ambiguous matches or uncertain timeouts leave the source untouched.
+3. Persist the verified target UID before deleting the source. Re-read source and target, reject concurrent source edits, then delete by UID with the existing UID/summary collision guard. Never delete a source until target content is verified. If a stage fails, retain both tasks where possible, expose recovery information, block replay/new moves for that task, and refresh without pretending success. On restart inspect durable state; do not blindly repeat copy or deletion. Rebind the original numeric ID only after verified completion and keep other IDs unique. Document that HA has no atomic cross-list move or compare-and-delete; exclusive writers are needed to avoid the final external race.
+
+## Client
+
+1. Add typed list/catalog transport and HA capability detection, scoped to the captured connection. Catalog failures block list routing rather than fall back to remembered project tokens. Keep existing file/local project workflows untouched. Use catalog IDs as selector values and friendly names as display labels; distinguish duplicate names with entity IDs.
+2. In HA mode Add/Edit use explicit list routing, preserve all legacy summary `+tokens`, and default an unselected create to the configured list. Edit starts with the task's actual list. Existing native datetime-preservation and remote-draft guards remain in force. Raw exports stay non-authoritative; old clients must not accidentally move tasks through token edits.
+3. Wire existing add-project, rename, and remove dialogs to list endpoints in HA mode, with async pending/error states and destination ownership. Do not simulate HA list operations by rewriting every task or persisting remembered labels. Refresh the catalog after mutations and on task-resource notifications; empty lists remain visible. Disable unsupported actions and avoid staging fake HA projects locally.
+4. A changed list in Edit opens an explicit move confirmation showing source and target and explaining copy/delete behavior. Cancel makes no writes. Success closes the editor; uncertain/partial outcomes retain a recoverable notice and require refresh/review before further writes. Deletion confirmation states that only an empty list can be deleted, protects the default, and explains exclusive access. Cancel/Escape/backdrop before submission makes no writes; while submitted prevent duplicate actions.
+
+## Verification
+
+- Expand generated-certificate fake HA to multiple lists with duplicate UIDs, display names with spaces/duplicates, empty lists, registry/config flows, WSS authentication, permission errors, and request fault injection. Verify exact HA request/response shapes against HA 2026.11 source; no live HA mutations.
+- Rust tests: complete multi-list CRUD/filter/default routing; schema 1 migration/restart/source mismatch; stable global IDs; unavailable lists fail closed; native descriptions/status/datetime preservation; list creation/rename/empty-only deletion/default and provider guards; non-admin behavior; TLS/auth/timeouts/response bounds; catalog notifications and concurrent mutation/poll provenance.
+- Move tests inject failures before/after every durable/network stage, including copy committed with lost response, ambiguous duplicate content, target status update failure, source concurrent change, source-delete lost response, metadata-save failure, cancellation, and restart recovery. Assert no source deletion before verified copy, no automatic replay, and no numeric-ID collision.
+- Client tests cover HA versus local/file paths, lossless legacy tokens, explicit list request bodies, default and same-list behavior, duplicate-name selectors, async create/rename/delete, move confirmation/cancel/error recovery, connection switches, empty-list notifications, and remote-update/draft ownership. Extend the real serializer/TLS server contract to multiple lists and moves.
+- Run server locked tests, formatting and strict Clippy; app typecheck/build/tests using `NODE_OPTIONS=--no-experimental-webstorage` when needed; serializer contract; version/whitespace checks. Attempt native checks only with available dependencies and report missing development packages rather than installing as root.
+
+## Delivery
+
+Create fresh `37-ha-lists-as-projects` branches in parent, server, and app before implementation. Update relevant READMEs, API/configuration/HA/project docs and release notes; increment server `0.2.11` to `0.2.12` and app `0.15.31` to `0.15.32` using existing mirrors. Record migration, admin permissions, concurrency limitations, recovery, tests, and unavailable checks in `5-implemented.md`. Commit implementation in submodules, then task results and updated pointers in the parent. Leave no claim that published images were updated.
